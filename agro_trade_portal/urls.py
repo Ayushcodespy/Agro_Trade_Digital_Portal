@@ -38,4 +38,5 @@ urlpatterns = [
     
     # Reports
     path('reports/activity/', views.user_activity_report, name='activity_report'),
+    path('update-balances/', views.update_all_balances, name='update_balances'),
 ]

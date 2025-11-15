@@ -10,11 +10,19 @@
     </div>
 </div>
 
+<!-- Error Messages -->
+{% if error %}
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ error }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
 <div class="row mt-4">
     <div class="col-md-8 mx-auto">
         <div class="card">
             <div class="card-header bg-success text-white">
-                <h4 class="mb-0">Payment Receipt</h4>
+                <h4 class="mb-0">💰 Payment Receipt</h4>
             </div>
             <div class="card-body">
                 <form method="post" id="payment-form">
@@ -36,6 +44,22 @@
                         <div class="form-text">Customer's current outstanding balance will be shown</div>
                     </div>
 
+                    <!-- Bill Selection Section -->
+                    <div class="mb-3">
+                        <label class="form-label">Select Bill (Optional)</label>
+                        <select name="bill" class="form-select" id="bill-select">
+                            <option value="">Apply to all pending bills (Auto-distribute)</option>
+                            {% for bill in pending_bills %}
+                            <option value="{{ bill.id }}" 
+                                    data-customer="{{ bill.customer.id }}"
+                                    data-remaining="{{ bill.remaining_amount }}">
+                                {{ bill.bill_number }} - {{ bill.customer.name }} - ₹{{ bill.remaining_amount }} due
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">If no bill selected, payment will be automatically distributed across all pending bills</div>
+                    </div>
+
                     <!-- Amount -->
                     <div class="mb-3">
                         <label class="form-label">Amount (₹) *</label>
@@ -50,10 +74,10 @@
                         <label class="form-label">Payment Method *</label>
                         <select name="payment_method" class="form-select" required>
                             <option value="">Select Method</option>
-                            <option value="cash">Cash</option>
-                            <option value="upi">UPI</option>
-                            <option value="bank">Bank Transfer</option>
-                            <option value="card">Card</option>
+                            <option value="cash">💵 Cash</option>
+                            <option value="upi">📱 UPI</option>
+                            <option value="bank">🏦 Bank Transfer</option>
+                            <option value="card">💳 Card</option>
                         </select>
                     </div>
 
@@ -66,7 +90,7 @@
 
                     <!-- Payment Summary -->
                     <div class="alert alert-info" id="payment-summary" style="display: none;">
-                        <h6>Payment Summary:</h6>
+                        <h6>📊 Payment Summary:</h6>
                         <p id="summary-text"></p>
                     </div>
 
@@ -75,7 +99,7 @@
                             ✅ Receive Payment
                         </button>
                         <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
-                            Cancel
+                            ❌ Cancel
                         </a>
                     </div>
                 </form>
@@ -84,9 +108,111 @@
     </div>
 </div>
 
+<!-- Recent Payments Summary -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">📋 Recent Payments</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Bill</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments|slice:":5" %}
+                            <tr>
+                                <td>{{ payment.date|date:"d M Y" }}</td>
+                                <td>{{ payment.customer.name }}</td>
+                                <td class="text-success">₹{{ payment.amount }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">
+                                        {% if payment.payment_method == 'cash' %}💵
+                                        {% elif payment.payment_method == 'upi' %}📱
+                                        {% elif payment.payment_method == 'bank' %}🏦
+                                        {% else %}💳{% endif %}
+                                        {{ payment.get_payment_method_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if payment.bill %}
+                                    <small>{{ payment.bill.bill_number }}</small>
+                                    {% else %}
+                                    <small class="text-muted">Auto-distributed</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    No recent payments found
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
+}
+
+.form-select, .form-control {
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+    padding: 10px 15px;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.btn {
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-weight: 500;
+}
+
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+.badge {
+    border-radius: 8px;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const customerSelect = document.getElementById('customer-select');
+    const billSelect = document.getElementById('bill-select');
     const amountInput = document.getElementById('amount-input');
     const balanceInfo = document.getElementById('balance-info');
     const paymentSummary = document.getElementById('payment-summary');
@@ -97,51 +223,128 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedOption = this.options[this.selectedIndex];
         const balance = selectedOption.getAttribute('data-balance') || '0';
         balanceInfo.textContent = `Outstanding balance: ₹${balance}`;
+        
+        // Update bill options based on selected customer
+        updateBillOptions(this.value);
         updatePaymentSummary();
+    });
+
+    // Update bill options based on selected customer
+    function updateBillOptions(customerId) {
+        const billOptions = billSelect.querySelectorAll('option');
+        
+        billOptions.forEach(option => {
+            if (option.value === '') {
+                // Keep "Apply to all" option always visible
+                option.style.display = '';
+                return;
+            }
+            
+            const billCustomerId = option.getAttribute('data-customer');
+            if (billCustomerId === customerId) {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+                // Deselect if not matching customer
+                if (option.selected) {
+                    billSelect.value = '';
+                }
+            }
+        });
+    }
+
+    // Auto-fill amount when bill is selected
+    billSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value && selectedOption.getAttribute('data-remaining')) {
+            const remainingAmount = selectedOption.getAttribute('data-remaining');
+            amountInput.value = remainingAmount;
+            updatePaymentSummary();
+        }
     });
 
     // Update payment summary when amount changes
     amountInput.addEventListener('input', updatePaymentSummary);
 
     function updatePaymentSummary() {
-        const selectedOption = customerSelect.options[customerSelect.selectedIndex];
-        const customerName = selectedOption.text.split(' - ')[0];
-        const balance = parseFloat(selectedOption.getAttribute('data-balance') || 0);
+        const selectedCustomerOption = customerSelect.options[customerSelect.selectedIndex];
+        const selectedBillOption = billSelect.options[billSelect.selectedIndex];
+        const customerName = selectedCustomerOption.text.split(' - ')[0];
+        const balance = parseFloat(selectedCustomerOption.getAttribute('data-balance') || 0);
         const amount = parseFloat(amountInput.value || 0);
 
         if (customerSelect.value && amount > 0) {
             const newBalance = balance - amount;
             
-            if (amount > balance) {
-                summaryText.innerHTML = `
-                    <strong>Warning:</strong> Payment amount (₹${amount}) is greater than outstanding balance (₹${balance}).<br>
-                    <strong>Customer:</strong> ${customerName}<br>
-                    <strong>New balance will be:</strong> ₹${newBalance.toFixed(2)} (Credit)
-                `;
-                paymentSummary.className = 'alert alert-warning';
-            } else if (amount === balance) {
-                summaryText.innerHTML = `
-                    <strong>Perfect!</strong> This payment will clear the entire outstanding balance.<br>
-                    <strong>Customer:</strong> ${customerName}<br>
-                    <strong>New balance will be:</strong> ₹0.00
-                `;
-                paymentSummary.className = 'alert alert-success';
+            let summaryHTML = '';
+            
+            if (selectedBillOption.value) {
+                // Specific bill payment
+                const billNumber = selectedBillOption.text.split(' - ')[0];
+                const billRemaining = parseFloat(selectedBillOption.getAttribute('data-remaining') || 0);
+                
+                if (amount > billRemaining) {
+                    summaryHTML = `
+                        <strong>⚠️ Warning:</strong> Payment amount (₹${amount}) is greater than bill remaining (₹${billRemaining}).<br>
+                        <strong>Bill:</strong> ${billNumber}<br>
+                        <strong>Customer:</strong> ${customerName}<br>
+                        <strong>Excess:</strong> ₹${(amount - billRemaining).toFixed(2)} will be applied to other bills
+                    `;
+                    paymentSummary.className = 'alert alert-warning';
+                } else if (amount === billRemaining) {
+                    summaryHTML = `
+                        <strong>✅ Perfect!</strong> This payment will clear the entire bill amount.<br>
+                        <strong>Bill:</strong> ${billNumber}<br>
+                        <strong>Customer:</strong> ${customerName}<br>
+                        <strong>Bill status will change to:</strong> Paid
+                    `;
+                    paymentSummary.className = 'alert alert-success';
+                } else {
+                    summaryHTML = `
+                        <strong>📝 Partial payment:</strong> ₹${amount} will be applied to this bill.<br>
+                        <strong>Bill:</strong> ${billNumber}<br>
+                        <strong>Customer:</strong> ${customerName}<br>
+                        <strong>Remaining on bill:</strong> ₹${(billRemaining - amount).toFixed(2)}
+                    `;
+                    paymentSummary.className = 'alert alert-info';
+                }
             } else {
-                summaryText.innerHTML = `
-                    <strong>Partial payment:</strong> ₹${amount} will be deducted from outstanding balance.<br>
-                    <strong>Customer:</strong> ${customerName}<br>
-                    <strong>New balance will be:</strong> ₹${newBalance.toFixed(2)}
-                `;
-                paymentSummary.className = 'alert alert-info';
+                // Auto-distribution payment
+                if (amount > balance) {
+                    summaryHTML = `
+                        <strong>⚠️ Warning:</strong> Payment amount (₹${amount}) is greater than outstanding balance (₹${balance}).<br>
+                        <strong>Customer:</strong> ${customerName}<br>
+                        <strong>New balance will be:</strong> ₹${newBalance.toFixed(2)} (Credit)<br>
+                        <strong>Distribution:</strong> Payment will be auto-distributed across all pending bills
+                    `;
+                    paymentSummary.className = 'alert alert-warning';
+                } else if (amount === balance) {
+                    summaryHTML = `
+                        <strong>✅ Perfect!</strong> This payment will clear the entire outstanding balance.<br>
+                        <strong>Customer:</strong> ${customerName}<br>
+                        <strong>All bills will be marked as:</strong> Paid<br>
+                        <strong>Distribution:</strong> Payment will be auto-distributed across all pending bills
+                    `;
+                    paymentSummary.className = 'alert alert-success';
+                } else {
+                    summaryHTML = `
+                        <strong>📝 Partial payment:</strong> ₹${amount} will be deducted from outstanding balance.<br>
+                        <strong>Customer:</strong> ${customerName}<br>
+                        <strong>New balance will be:</strong> ₹${newBalance.toFixed(2)}<br>
+                        <strong>Distribution:</strong> Payment will be auto-distributed across all pending bills (oldest first)
+                    `;
+                    paymentSummary.className = 'alert alert-info';
+                }
             }
             
+            summaryText.innerHTML = summaryHTML;
             paymentSummary.style.display = 'block';
         } else {
             paymentSummary.style.display = 'none';
         }
     }
 
-    // Auto-fill amount from URL parameters
+    // Auto-fill from URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const amountParam = urlParams.get('amount');
     const customerParam = urlParams.get('customer');
@@ -162,10 +365,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const amount = parseFloat(amountInput.value);
         if (amount <= 0) {
             e.preventDefault();
-            alert('Please enter a valid payment amount.');
+            alert('❌ Please enter a valid payment amount.');
             amountInput.focus();
+            return;
         }
+        
+        if (!customerSelect.value) {
+            e.preventDefault();
+            alert('❌ Please select a customer.');
+            customerSelect.focus();
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '⏳ Processing...';
+        submitBtn.disabled = true;
     });
+
+    // Initialize
+    if (customerSelect.value) {
+        customerSelect.dispatchEvent(new Event('change'));
+    }
 });
 </script>
 {% endblock %}

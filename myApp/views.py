@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, authenticate, logout
@@ -6,8 +7,8 @@ from decimal import Decimal, InvalidOperation
 from .models import Product, Customer, Bill, BillItem, Payment, UserProfile
 from django.http import JsonResponse
 from django.db.models import Q, Sum 
-from django.contrib import messages
 import json
+
 
 # Home Page - Public
 def home(request):
@@ -20,15 +21,18 @@ def dashboard(request):
     total_customers = Customer.objects.count()
     total_bills_today = Bill.objects.filter(date__date=timezone.now().date()).count()
     
-    # Calculate total outstanding balance
-    total_outstanding = sum(customer.outstanding_balance for customer in Customer.objects.all())
-    print(total_outstanding)
+    # Calculate total outstanding balance - FIXED
+    total_outstanding_result = Customer.objects.aggregate(
+        total=Sum('outstanding_balance')
+    )['total'] or Decimal('0')
+    
+    print(f"DASHBOARD: Total Outstanding: {total_outstanding_result}")
     
     context = {
         'total_products': total_products,
         'total_customers': total_customers,
         'total_bills_today': total_bills_today,
-        'total_outstanding': total_outstanding,
+        'total_outstanding': total_outstanding_result,
         'current_user': request.user
     }
     return render(request, 'dashboard.html', context)
@@ -352,8 +356,10 @@ def receive_payment(request):
         try:
             customer = Customer.objects.get(id=customer_id)
             bill = None
-            if bill_id:
+            if bill_id and bill_id != 'null':
                 bill = Bill.objects.get(id=bill_id)
+            
+            print(f"VIEW: Creating payment - Customer: {customer.name}, Amount: {amount}, Bill: {bill}")
             
             # Create payment
             payment = Payment(
@@ -366,11 +372,26 @@ def receive_payment(request):
             )
             payment.save()
             
-            messages.success(request, f'Payment of ₹{amount} received successfully!')
+            # Force customer balance update
+            customer.update_balance()
+            
+            print(f"SUCCESS: Payment of ₹{amount} received from {customer.name}")
             return redirect('payment_list')
             
         except (Customer.DoesNotExist, Bill.DoesNotExist) as e:
-            messages.error(request, 'Invalid customer or bill selected.')
+            print(f"ERROR: Invalid customer or bill selected - {e}")
+            return render(request, 'receive_payment.html', {
+                'customers': Customer.objects.all(),
+                'pending_bills': Bill.objects.filter(payment_status__in=['pending', 'partial']),
+                'error': 'Invalid customer or bill selected.'
+            })
+        except Exception as e:
+            print(f"ERROR: Payment processing failed - {e}")
+            return render(request, 'receive_payment.html', {
+                'customers': Customer.objects.all(),
+                'pending_bills': Bill.objects.filter(payment_status__in=['pending', 'partial']),
+                'error': f'Error processing payment: {str(e)}'
+            })
     
     # GET request handling
     customers = Customer.objects.all()
@@ -380,8 +401,6 @@ def receive_payment(request):
         'customers': customers,
         'pending_bills': pending_bills
     })
-
-
 
 
 @login_required
@@ -525,7 +544,11 @@ def customer_lending(request):
         customers = customers.filter(outstanding_balance__gt=5000)
     
     customers_with_stats = []
-    total_outstanding = Decimal('0')
+    
+    # Use database aggregation for better performance
+    total_outstanding_result = customers.aggregate(
+        total=Sum('outstanding_balance')
+    )['total'] or Decimal('0')
     
     for customer in customers:
         customer_bills = Bill.objects.filter(customer=customer)
@@ -537,8 +560,6 @@ def customer_lending(request):
             'total_purchases': total_purchases,
             'outstanding_balance': customer.outstanding_balance
         })
-        
-        total_outstanding += customer.outstanding_balance
     
     all_customers = Customer.objects.exclude(Q(address__isnull=True) | Q(address=''))
     unique_villages = list(set(customer.address for customer in all_customers))[:20]
@@ -550,12 +571,11 @@ def customer_lending(request):
         'payment_status': payment_status,
         'unique_villages': unique_villages,
         'total_customers': customers.count(),
-        'total_outstanding': total_outstanding,
+        'total_outstanding': total_outstanding_result,
         'filtered': any([search_query, village_filter, payment_status])
     }
     
     return render(request, 'customer_lending.html', context)
-
 
 
 @login_required
@@ -606,3 +626,21 @@ def customer_detail(request, customer_id):
     }
     
     return render(request, 'customer_detail.html', context)
+
+
+@login_required
+def update_all_balances(request):
+    """Manual function to update all customer balances"""
+    customers = Customer.objects.all()
+    updated_count = 0
+    
+    for customer in customers:
+        old_balance = customer.outstanding_balance
+        new_balance = customer.update_balance()
+        
+        if old_balance != new_balance:
+            updated_count += 1
+            print(f"Updated {customer.name}: {old_balance} -> {new_balance}")
+    
+    messages.success(request, f'Updated balances for {updated_count} customers')
+    return redirect('dashboard')
