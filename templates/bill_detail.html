@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Bill Details{% endblock %}
+
+{% block content %}
+<div class="row no-print">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>Bill Details</h2>
+            <div>
+                <button onclick="window.print()" class="btn btn-success me-2">
+                    🖨️ Print Bill
+                </button>
+                <a href="{% url 'create_bill' %}" class="btn btn-primary">
+                    + New Bill
+                </a>
+            </div>
+        </div>
+        <p class="text-muted">Bill Number: {{ bill.bill_number }}</p>
+    </div>
+</div>
+
+<div class="row mt-4 no-print">
+    <div class="col-12">
+        <div class="d-flex gap-2 flex-wrap mb-4">
+            {% if bill.remaining_amount > 0 %}
+            <a href="{% url 'receive_payment' %}?customer={{ bill.customer.id }}&amount={{ bill.remaining_amount }}" 
+               class="btn btn-warning">
+                💰 Receive Payment (₹{{ bill.remaining_amount }})
+            </a>
+            {% endif %}
+            <a href="{% url 'bill_list' %}" class="btn btn-outline-secondary">
+                📋 All Bills
+            </a>
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">
+                📊 Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-10 mx-auto">
+        <!-- Printable Bill -->
+        <div class="card bill-container">
+            <div class="card-body">
+                <!-- Bill Header -->
+                <div class="text-center mb-4 bill-header">
+                    <h1 class="text-success">AGRO TRADE</h1>
+                    <p class="mb-0">Your Trusted Agricultural Partner</p>
+                    <p>📞 +91-9876543210 | 📍 Main Market, City</p>
+                </div>
+
+                <!-- Rest of your bill content here -->
+                <div class="p-4">
+            <!-- Customer and Bill Details -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="border p-3 rounded">
+                        <h5 class="border-bottom pb-2 text-success"><i class="fas fa-user me-2"></i>Bill To:</h5>
+                        <p class="mb-1"><strong>{{ bill.customer.name }}</strong></p>
+                        <p class="mb-1"><i class="fas fa-phone me-1"></i> {{ bill.customer.phone }}</p>
+                        <p class="mb-0"><i class="fas fa-map-marker-alt me-1"></i> {{ bill.customer.address }}</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="border p-3 rounded mt-3 mt-md-0">
+                        <h5 class="border-bottom pb-2 text-success"><i class="fas fa-receipt me-2"></i>Bill Details:</h5>
+                        <p class="mb-1"><strong>Bill No:</strong> {{ bill.bill_number }}</p>
+                        <p class="mb-1"><strong>Date:</strong> {{ bill.date|date:"d M Y, h:i A" }}</p>
+                        <p class="mb-1"><strong>Status:</strong> 
+                            <span class="badge {% if bill.payment_status == 'paid' %}bg-success{% elif bill.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ bill.get_payment_status_display }}
+                            </span>
+                        </p>
+                        <p class="mb-0"><strong>Created By:</strong> {{ bill.created_by.get_full_name }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Table -->
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-success">
+                        <tr>
+                            <th>#</th>
+                            <th>Product Description</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in bill.items.all %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ item.product.name }}</td>
+                            <td>{{ item.quantity }} Nos</td>
+                            <td>₹{{ item.price }}</td>
+                            <td>₹{{ item.total }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Payment Summary -->
+            <div class="row mt-4">
+                <div class="col-md-6 offset-md-6">
+                    <div class="border p-3 rounded">
+                        <div class="d-flex justify-content-between">
+                            <strong>Subtotal:</strong>
+                            <span>₹{{ bill.total_amount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <strong>Paid Amount:</strong>
+                            <span class="text-success">₹{{ bill.paid_amount }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <strong>Due Amount:</strong>
+                            <span class="{% if bill.remaining_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                                ₹{{ bill.remaining_amount }}
+                            </span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <h4>Grand Total:</h4>
+                            <h4 class="text-success">₹{{ bill.total_amount }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Terms -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="border p-3 rounded">
+                        <h6 class="text-success"><i class="fas fa-info-circle me-2"></i>Payment Terms:</h6>
+                        <p class="mb-1 small">• Payment due within 15 days of invoice date</p>
+                        <p class="mb-1 small">• Late payment interest: 1.5% per month</p>
+                        <p class="mb-0 small">• Thank you for your business!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signatures -->
+            <div class="row mt-4 signature-area">
+                <div class="col-md-6">
+                    <div class="text-center">
+                        <p>Customer Signature</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-center">
+                        <p>For AGRO TRADE</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<style>
+    @media print {
+
+            
+            /* Ensure the printable area uses full width */
+            .container {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            /* Improve bill header appearance */
+            .bill-header {
+                background: #27ae60 !important;
+                color: white !important;
+                padding: 15px 0 !important;
+                margin-bottom: 15px !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            /* Adjust bill information sections */
+            .border.p-3 {
+                border: 1px solid #ddd !important;
+                padding: 10px !important;
+                margin-bottom: 10px !important;
+            }
+            
+            /* Table styling for print */
+            .table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 10pt;
+                margin: 15px 0;
+            }
+            
+            .table-bordered th, .table-bordered td {
+                border: 1px solid #ddd !important;
+                padding: 6px !important;
+            }
+            
+            .table-success {
+                background-color: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            /* Payment summary adjustments */
+            .border.p-3 .d-flex {
+                font-size: 10pt;
+                margin: 5px 0;
+            }
+            
+            /* Signature area styling */
+            .text-center p.border-top {
+                border-top: 1px solid #ddd !important;
+                padding-top: 40px !important;
+                margin-top: 60px !important;
+                font-size: 10pt;
+            }
+            
+            /* Ensure no page breaks inside important elements */
+            .row {
+                page-break-inside: avoid;
+            }
+            
+            /* Force colors to print correctly */
+            .text-success {
+                color: #198754 !important;
+            }
+            
+            .text-danger {
+                color: #dc3545 !important;
+            }
+            
+            .badge {
+                border: 1px solid #000 !important;
+                color: black !important;
+                background-color: transparent !important;
+            }
+        }
+</style>
+{% endblock %}

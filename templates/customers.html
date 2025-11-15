@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Customers{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Customer List</h2>
+    <div>
+        <a href="{% url 'add_customer' %}" class="btn btn-success">+ Add New Customer</a>
+    </div>
+</div>
+
+<!-- Search Box -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="input-group">
+            <input type="text" class="form-control" placeholder="Search customers by name..." id="customer-search">
+            <button class="btn btn-outline-secondary" type="button" onclick="searchCustomers()">
+                🔍 Search
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead class="table-success">
+            <tr>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Total Purchases</th>
+                <th>Outstanding Balance</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for customer in customers %}
+            <tr>
+                <td>
+                    <strong>{{ customer.name }}</strong>
+                </td>
+                <td>{{ customer.phone }}</td>
+                <td>{{ customer.address|truncatewords:5 }}</td>
+                <td>₹{{ customer.total_purchases|default:0 }}</td>
+                <td class="{% if customer.outstanding_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                    ₹{{ customer.outstanding_balance }}
+                </td>
+                <td>
+                    <a href="{% url 'customer_detail' customer.id %}" class="btn btn-sm btn-primary">
+                        View Details
+                    </a>
+                    {% if customer.outstanding_balance > 0 %}
+                    <a href="{% url 'receive_payment' %}?customer={{ customer.id }}&amount={{ customer.outstanding_balance }}" 
+                       class="btn btn-sm btn-warning">
+                        Collect Payment
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="bi bi-people" style="font-size: 2rem;"></i>
+                        <p class="mt-2">No customers found</p>
+                        <a href="{% url 'add_customer' %}" class="btn btn-success mt-2">Add First Customer</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function searchCustomers() {
+    const query = document.getElementById('customer-search').value.trim();
+    if (query) {
+        window.location.href = `{% url 'customer_list' %}?search=${encodeURIComponent(query)}`;
+    }
+}
+
+// Enter key press for search
+document.getElementById('customer-search').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        searchCustomers();
+    }
+});
+</script>
+{% endblock %}

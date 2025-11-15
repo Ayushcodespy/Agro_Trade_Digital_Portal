@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Lending Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="text-success mb-1">📊 Lending Management System</h2>
+                    <p class="text-muted mb-0">Complete customer credit tracking and management</p>
+                </div>
+                <a href="{% url 'customer_list' %}" class="btn btn-outline-success">
+                    👥 All Customers
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card lending-card mb-4">
+        <div class="card-header bg-gradient-success text-white">
+            <h6 class="mb-0">🔍 Advanced Search & Filters</h6>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Search Customers</label>
+                    <input type="text" name="search" class="form-control form-control-sm" 
+                           value="{{ search_query }}" placeholder="Name, phone, or address...">
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label">Filter by Area</label>
+                    <select name="village" class="form-select form-select-sm">
+                        <option value="">All Areas</option>
+                        {% for village in unique_villages %}
+                        <option value="{{ village }}" {% if village_filter == village %}selected{% endif %}>
+                            {{ village|truncatewords:2 }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label class="form-label">Payment Status</label>
+                    <select name="payment_status" class="form-select form-select-sm">
+                        <option value="">All Customers</option>
+                        <option value="pending" {% if payment_status == 'pending' %}selected{% endif %}>
+                            ⚠️ Pending Payments
+                        </option>
+                        <option value="completed" {% if payment_status == 'completed' %}selected{% endif %}>
+                            ✅ Paid Customers
+                        </option>
+                        <option value="high_balance" {% if payment_status == 'high_balance' %}selected{% endif %}>
+                            🔴 High Balance (>₹5000)
+                        </option>
+                    </select>
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-sm">
+                            🔍 Apply Filters
+                        </button>
+                        <a href="{% url 'customer_lending' %}" class="btn btn-outline-secondary btn-sm">
+                            🗑️ Clear
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card summary-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title">Total Customers</h6>
+                            <h3 class="card-text">{{ total_customers }}</h3>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="summary-icon">👥</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card summary-card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title">Total Outstanding</h6>
+                            <h3 class="card-text">₹{{ total_outstanding }}</h3>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="summary-icon">💰</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card summary-card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title">Pending Payments</h6>
+                            <h3 class="card-text">{{ customers_with_stats|length }}</h3>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="summary-icon">⏰</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card summary-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title">Active Filters</h6>
+                            <h3 class="card-text">{% if filtered %}Yes{% else %}No{% endif %}</h3>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <div class="summary-icon">🔧</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers Table -->
+    <div class="card lending-card">
+        <div class="card-header bg-light">
+            <h6 class="m-0 font-weight-bold text-success">
+                📋 Customer Lending Details ({{ customers_with_stats|length }} results)
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover lending-table">
+                    <thead>
+                        <tr class="table-success">
+                            <th>Customer Details</th>
+                            <th>Address</th>
+                            <th>Total Bills</th>
+                            <th>Total Purchases</th>
+                            <th>Outstanding</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in customers_with_stats %}
+                        <tr class="customer-row" onclick="window.location='{% url 'customer_detail' item.customer.id %}'" style="cursor: pointer;">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="customer-avatar bg-success text-white">
+                                        {{ item.customer.name|first|upper }}
+                                    </div>
+                                    <div class="ms-3">
+                                        <strong class="text-success">{{ item.customer.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">📞 {{ item.customer.phone }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="address-text" title="{{ item.customer.address }}">
+                                    {{ item.customer.address|truncatewords:3 }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-info rounded-pill">{{ item.total_bills }}</span>
+                            </td>
+                            <td class="fw-bold">₹{{ item.total_purchases }}</td>
+                            <td class="{% if item.outstanding_balance > 0 %}text-danger fw-bold{% else %}text-success{% endif %}">
+                                ₹{{ item.outstanding_balance }}
+                            </td>
+                            <td>
+                                {% if item.outstanding_balance > 0 %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% else %}
+                                <span class="badge bg-success">Paid</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'customer_detail' item.customer.id %}" 
+                                       class="btn btn-sm btn-outline-primary" title="View Complete History">
+                                        📊
+                                    </a>
+                                    {% if item.outstanding_balance > 0 %}
+                                    <a href="{% url 'receive_payment' %}?customer={{ item.customer.id }}&amount={{ item.outstanding_balance }}" 
+                                       class="btn btn-sm btn-outline-warning" title="Collect Payment">
+                                        💰
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'create_bill' %}?customer_id={{ item.customer.id }}" 
+                                       class="btn btn-sm btn-outline-success" title="Create New Bill">
+                                        🧾
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fas fa-search fa-3x mb-3"></i>
+                                    <h5>No customers found</h5>
+                                    <p>Try adjusting your search criteria</p>
+                                    <a href="{% url 'add_customer' %}" class="btn btn-success mt-2">
+                                        + Add New Customer
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if customers_with_stats %}
+            <div class="mt-4 print-actions">
+                <button class="btn btn-outline-success btn-sm" onclick="printReport()">
+                    🖨️ Print Report
+                </button>
+                <button class="btn btn-outline-info btn-sm" onclick="exportToExcel()">
+                    📊 Export to Excel
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Print Styles -->
+<style>
+@media print {
+    .navbar, .btn, .print-actions, .card-header, .summary-card {
+        display: none !important;
+    }
+    
+    .lending-card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    body {
+        padding: 20px;
+        font-size: 12px;
+        background: white !important;
+    }
+    
+    .table {
+        font-size: 11px;
+    }
+    
+    .customer-avatar {
+        display: none !important;
+    }
+    
+    .btn-group {
+        display: none !important;
+    }
+    
+    .container-fluid {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+/* Custom CSS */
+.lending-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.lending-card:hover {
+    transform: translateY(-2px);
+}
+
+.summary-card {
+    border: none;
+    border-radius: 15px;
+    transition: transform 0.3s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-3px);
+}
+
+.summary-icon {
+    font-size: 2.5rem;
+    opacity: 0.8;
+}
+
+.customer-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.customer-row:hover {
+    background-color: rgba(40, 167, 69, 0.05) !important;
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.lending-table th {
+    border-top: none;
+    font-weight: 600;
+    padding: 15px 10px;
+}
+
+.lending-table td {
+    padding: 12px 10px;
+    vertical-align: middle;
+}
+
+.address-text {
+    cursor: help;
+    border-bottom: 1px dotted #999;
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+}
+
+.btn-group .btn {
+    border-radius: 8px;
+    margin: 2px;
+    padding: 5px 8px;
+}
+
+.badge.rounded-pill {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+}
+</style>
+
+<script>
+function printReport() {
+    window.print();
+}
+
+function exportToExcel() {
+    let csv = [];
+    const rows = document.querySelectorAll('.lending-table tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        let row = [], cols = rows[i].querySelectorAll('td, th');
+        
+        for (let j = 0; j < cols.length; j++) {
+            let text = cols[j].innerText.replace(/[^\w\s₹,.-]/gi, '').trim();
+            row.push('"' + text + '"');
+        }
+        
+        csv.push(row.join(','));
+    }
+    
+    const csvString = csv.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    link.href = URL.createObjectURL(blob);
+    link.download = 'customer_lending_report_' + new Date().toISOString().split('T')[0] + '.csv';
+    link.click();
+}
+
+// Quick address view
+document.querySelectorAll('.address-text').forEach(el => {
+    el.addEventListener('click', function(e) {
+        e.stopPropagation();
+        alert(this.title);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Success{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="text-success mb-3" style="font-size: 4rem;">✓</div>
+                <h3>Payment Received Successfully!</h3>
+                <p class="text-muted">The payment has been recorded in the system.</p>
+                <div class="mt-4">
+                    <a href="{% url 'receive_payment' %}" class="btn btn-success me-2">Receive Another Payment</a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

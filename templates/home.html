@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto text-center">
+        <div class="jumbotron bg-light p-5 rounded">
+            <h1 class="display-4">Welcome to Agro Trade Portal</h1>
+            <p class="lead">Complete solution for your agricultural business management</p>
+            <hr class="my-4">
+            <p>Manage your shop, generate bills, track payments, and monitor stock</p>
+            
+            {% if not user.is_authenticated %}
+            <div class="mt-4">
+                <a href="{% url 'login' %}" class="btn btn-success btn-lg me-3">Login</a>
+                <a href="/admin/" class="btn btn-outline-success btn-lg">Admin Panel</a>
+            </div>
+            {% else %}
+            <div class="mt-4">
+                <a href="{% url 'dashboard' %}" class="btn btn-success btn-lg">Go to Dashboard</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Payment History{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Payment History</h2>
+    <a href="{% url 'receive_payment' %}" class="btn btn-success">+ Receive Payment</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead class="table-success">
+            <tr>
+                <th>Date & Time</th>
+                <th>Customer</th>
+                <th>Amount (₹)</th>
+                <th>Payment Method</th>
+                <th>Received By</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for payment in payments %}
+            <tr>
+                <td>{{ payment.date|date:"d M Y, H:i" }}</td>
+                <td>{{ payment.customer.name }}</td>
+                <td>₹{{ payment.amount }}</td>
+                <td>
+                    <span class="badge bg-secondary">{{ payment.get_payment_method_display }}</span>
+                </td>
+                <td>{{ payment.received_by.get_full_name|default:payment.received_by.username }}</td>
+                <td>{{ payment.notes|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="bi bi-cash-coin" style="font-size: 2rem;"></i>
+                        <p class="mt-2">No payments received yet</p>
+                        <a href="{% url 'receive_payment' %}" class="btn btn-success mt-2">Receive First Payment</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination (Optional) -->
+{% if payments.has_other_pages %}
+<nav aria-label="Payment pagination">
+    <ul class="pagination justify-content-center">
+        {% if payments.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ payments.previous_page_number }}">Previous</a>
+        </li>
+        {% endif %}
+        
+        {% for i in payments.paginator.page_range %}
+        <li class="page-item {% if payments.number == i %}active{% endif %}">
+            <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+        </li>
+        {% endfor %}
+        
+        {% if payments.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ payments.next_page_number }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

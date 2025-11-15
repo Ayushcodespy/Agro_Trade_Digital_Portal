@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}{{ customer.name }} - Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>Customer Details</h2>
+            <a href="{% url 'customer_list' %}" class="btn btn-outline-secondary">
+                ← Back to Customers
+            </a>
+        </div>
+        <p class="text-muted">Complete transaction history for {{ customer.name }}</p>
+    </div>
+</div>
+
+<!-- Customer Summary -->
+<div class="row mt-4">
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">📞 Phone</h5>
+                <p class="card-text">{{ customer.phone }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">💰 Total Purchases</h5>
+                <p class="card-text">₹{{ total_purchases }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">💵 Total Paid</h5>
+                <p class="card-text">₹{{ total_paid }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">⚖️ Balance</h5>
+                <p class="card-text {% if outstanding_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                    ₹{{ outstanding_balance }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Address -->
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Address</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">{{ customer.address|linebreaks }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction History -->
+<div class="row mt-4">
+    <div class="col-12">
+        <h4>Transaction History</h4>
+        
+        <!-- Bills Section -->
+        <div class="card mt-3">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Purchase History ({{ bills.count }} Bills)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Bill No</th>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Paid</th>
+                                <th>Balance</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bill in bills %}
+                            <tr>
+                                <td>{{ bill.bill_number }}</td>
+                                <td>{{ bill.date|date:"d M Y" }}</td>
+                                <td>₹{{ bill.total_amount }}</td>
+                                <td>₹{{ bill.paid_amount }}</td>
+                                <td class="{% if bill.remaining_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                                    ₹{{ bill.remaining_amount }}
+                                </td>
+                                <td>
+                                    <span class="badge {% if bill.payment_status == 'paid' %}bg-success{% elif bill.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ bill.get_payment_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'bill_detail' bill.id %}" class="btn btn-sm btn-outline-primary">
+                                        View
+                                    </a>
+                                    {% if bill.remaining_amount > 0 %}
+                                    <a href="{% url 'receive_payment' %}?customer={{ customer.id }}&amount={{ bill.remaining_amount }}" 
+                                       class="btn btn-sm btn-warning">
+                                        Pay
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center">No bills found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Section -->
+        <div class="card mt-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Payment History ({{ payments.count }} Payments)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Received By</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                            <tr>
+                                <td>{{ payment.date|date:"d M Y, H:i" }}</td>
+                                <td class="text-success">₹{{ payment.amount }}</td>
+                                <td>{{ payment.get_payment_method_display }}</td>
+                                <td>{{ payment.received_by.get_full_name }}</td>
+                                <td>{{ payment.notes|default:"-" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">No payments found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'create_bill' %}?customer_id={{ customer.id }}" class="btn btn-success">
+                        🧾 Create New Bill
+                    </a>
+                    {% if outstanding_balance > 0 %}
+                    <a href="{% url 'receive_payment' %}?customer={{ customer.id }}&amount={{ outstanding_balance }}" 
+                       class="btn btn-warning">
+                        💰 Receive Payment (₹{{ outstanding_balance }})
+                    </a>
+                    {% endif %}
+                    <a href="#" class="btn btn-outline-primary">
+                        ✏️ Edit Customer
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

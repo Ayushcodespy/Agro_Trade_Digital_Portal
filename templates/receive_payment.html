@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Receive Payment{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Receive Payment</h2>
+        <p class="text-muted">Record customer payments</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Payment Receipt</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" id="payment-form">
+                    {% csrf_token %}
+                    
+                    <!-- Customer Selection -->
+                    <div class="mb-3">
+                        <label class="form-label">Select Customer *</label>
+                        <select name="customer" class="form-select" id="customer-select" required>
+                            <option value="">Select Customer</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}" 
+                                    data-balance="{{ customer.outstanding_balance }}"
+                                    {% if request.GET.customer == customer.id|stringformat:"i" %}selected{% endif %}>
+                                {{ customer.name }} - ₹{{ customer.outstanding_balance }} due
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Customer's current outstanding balance will be shown</div>
+                    </div>
+
+                    <!-- Amount -->
+                    <div class="mb-3">
+                        <label class="form-label">Amount (₹) *</label>
+                        <input type="number" name="amount" class="form-control" 
+                               id="amount-input" step="0.01" min="0.01" required
+                               value="{{ request.GET.amount|default:'' }}">
+                        <div class="form-text" id="balance-info">Outstanding balance: ₹0</div>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method *</label>
+                        <select name="payment_method" class="form-select" required>
+                            <option value="">Select Method</option>
+                            <option value="cash">Cash</option>
+                            <option value="upi">UPI</option>
+                            <option value="bank">Bank Transfer</option>
+                            <option value="card">Card</option>
+                        </select>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-4">
+                        <label class="form-label">Notes (Optional)</label>
+                        <textarea name="notes" class="form-control" rows="3" 
+                                  placeholder="Transaction ID, reference number, or any additional notes"></textarea>
+                    </div>
+
+                    <!-- Payment Summary -->
+                    <div class="alert alert-info" id="payment-summary" style="display: none;">
+                        <h6>Payment Summary:</h6>
+                        <p id="summary-text"></p>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            ✅ Receive Payment
+                        </button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const customerSelect = document.getElementById('customer-select');
+    const amountInput = document.getElementById('amount-input');
+    const balanceInfo = document.getElementById('balance-info');
+    const paymentSummary = document.getElementById('payment-summary');
+    const summaryText = document.getElementById('summary-text');
+
+    // Update balance info when customer is selected
+    customerSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const balance = selectedOption.getAttribute('data-balance') || '0';
+        balanceInfo.textContent = `Outstanding balance: ₹${balance}`;
+        updatePaymentSummary();
+    });
+
+    // Update payment summary when amount changes
+    amountInput.addEventListener('input', updatePaymentSummary);
+
+    function updatePaymentSummary() {
+        const selectedOption = customerSelect.options[customerSelect.selectedIndex];
+        const customerName = selectedOption.text.split(' - ')[0];
+        const balance = parseFloat(selectedOption.getAttribute('data-balance') || 0);
+        const amount = parseFloat(amountInput.value || 0);
+
+        if (customerSelect.value && amount > 0) {
+            const newBalance = balance - amount;
+            
+            if (amount > balance) {
+                summaryText.innerHTML = `
+                    <strong>Warning:</strong> Payment amount (₹${amount}) is greater than outstanding balance (₹${balance}).<br>
+                    <strong>Customer:</strong> ${customerName}<br>
+                    <strong>New balance will be:</strong> ₹${newBalance.toFixed(2)} (Credit)
+                `;
+                paymentSummary.className = 'alert alert-warning';
+            } else if (amount === balance) {
+                summaryText.innerHTML = `
+                    <strong>Perfect!</strong> This payment will clear the entire outstanding balance.<br>
+                    <strong>Customer:</strong> ${customerName}<br>
+                    <strong>New balance will be:</strong> ₹0.00
+                `;
+                paymentSummary.className = 'alert alert-success';
+            } else {
+                summaryText.innerHTML = `
+                    <strong>Partial payment:</strong> ₹${amount} will be deducted from outstanding balance.<br>
+                    <strong>Customer:</strong> ${customerName}<br>
+                    <strong>New balance will be:</strong> ₹${newBalance.toFixed(2)}
+                `;
+                paymentSummary.className = 'alert alert-info';
+            }
+            
+            paymentSummary.style.display = 'block';
+        } else {
+            paymentSummary.style.display = 'none';
+        }
+    }
+
+    // Auto-fill amount from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const amountParam = urlParams.get('amount');
+    const customerParam = urlParams.get('customer');
+    
+    if (amountParam) {
+        amountInput.value = amountParam;
+    }
+    if (customerParam) {
+        customerSelect.value = customerParam;
+        customerSelect.dispatchEvent(new Event('change'));
+        if (amountParam) {
+            updatePaymentSummary();
+        }
+    }
+
+    // Form validation
+    document.getElementById('payment-form').addEventListener('submit', function(e) {
+        const amount = parseFloat(amountInput.value);
+        if (amount <= 0) {
+            e.preventDefault();
+            alert('Please enter a valid payment amount.');
+            amountInput.focus();
+        }
+    });
+});
+</script>
+{% endblock %}

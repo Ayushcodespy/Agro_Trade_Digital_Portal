@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Confirm Bill{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>📋 Bill Confirmation</h2>
+        <p class="text-muted">Review and confirm the bill details</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">👁️ Bill Preview</h5>
+            </div>
+            <div class="card-body">
+                <!-- Customer Details -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Customer Information</h6>
+                        <p><strong>Name:</strong> {{ customer_name }}</p>
+                        <p><strong>Phone:</strong> {{ customer_phone }}</p>
+                        <p><strong>Address:</strong> {{ customer_address }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Payment Summary</h6>
+                        <p><strong>Total Amount:</strong> ₹{{ total_amount }}</p>
+                        <p><strong>Paid Amount:</strong> ₹{{ paid_amount }}</p>
+                        <p><strong>Remaining:</strong> ₹{{ remaining_amount }}</p>
+                        <p><strong>Method:</strong> {{ payment_method }}</p>
+                        <p><strong>Status:</strong> 
+                            <span class="badge {% if payment_status == 'paid' %}bg-success{% elif payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ payment_status }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Products Table -->
+                <h6>Products</h6>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in bill_items %}
+                            <tr>
+                                <td>{{ item.product.name }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>₹{{ item.price }}</td>
+                                <td>₹{{ item.total }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-success">
+                                <th colspan="3" class="text-end">Grand Total:</th>
+                                <th>₹{{ total_amount }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- Confirmation Form -->
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="customer_name" value="{{ customer_name }}">
+                    <input type="hidden" name="customer_phone" value="{{ customer_phone }}">
+                    <input type="hidden" name="customer_address" value="{{ customer_address }}">
+                    <input type="hidden" name="paid_amount" value="{{ paid_amount }}">
+                    <input type="hidden" name="payment_method" value="{{ payment_method }}">
+                    <input type="hidden" name="total_amount" value="{{ total_amount }}">
+                    
+                    {% for item in bill_items %}
+                    <input type="hidden" name="final_products[]" value="{{ item.product.id }}">
+                    <input type="hidden" name="final_quantities[]" value="{{ item.quantity }}">
+                    <input type="hidden" name="final_prices[]" value="{{ item.price }}">
+                    {% endfor %}
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" name="confirm_bill" value="1" class="btn btn-success me-md-2">
+                            ✅ Confirm & Save Bill
+                        </button>
+                        <a href="{% url 'create_bill' %}" class="btn btn-outline-secondary">
+                            ✏️ Edit Bill
+                        </a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-danger">
+                            ❌ Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

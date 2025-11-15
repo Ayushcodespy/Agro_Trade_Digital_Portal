@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>My Profile</h2>
+        <p class="text-muted">Manage your account settings and preferences</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Profile Card -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-success">Profile Information</h6>
+            </div>
+            <div class="card-body text-center">
+                <div class="profile-picture mb-4">
+                    <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center"
+                        style="width: 120px; height: 120px; font-size: 3rem; color: white;">
+                        {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+                    </div>
+                </div>
+
+                <h4 class="text-success">{{ user.get_full_name }}</h4>
+                <p class="text-muted">@{{ user.username }}</p>
+
+                <div class="row text-left mt-4">
+                    <div class="col-12">
+                        <p><strong>📧 Email:</strong><br>{{ user.email }}</p>
+                        <p><strong>📅 Member Since:</strong><br>{{ user.date_joined|date:"d M Y" }}</p>
+                        <p><strong>🔐 Last Login:</strong><br>{{ user.last_login|date:"d M Y, H:i" }}</p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h5 class="text-success">{{ user_bills_count }}</h5>
+                            <small class="text-muted">Bills Created</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h5 class="text-success">{{ user_payments_count }}</h5>
+                            <small class="text-muted">Payments Processed</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-success">Performance Stats</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Today's Activity</strong>
+                    <span class="float-right">{% if today_bills > 0 %}✅{% else %}⏳{% endif %}</span>
+                    <div class="progress mt-1">
+                        <div class="progress-bar bg-success" role="progressbar"
+                            style="width: {{ today_bills|default:0|add:0 }}0% /* django-template */"  
+                            aria-valuenow="{{ today_bills|default:0 }}" aria-valuemin="0" aria-valuemax="10"></div>
+                    </div>
+                    <small class="text-muted">{{ today_bills }} bills today</small>
+                </div>
+
+                <div class="mb-3">
+                    <strong>This Month</strong>
+                    <span class="float-right">📈</span>
+                    <div class="progress mt-1">
+                        <div class="progress-bar bg-info" role="progressbar"
+                            style="width: {{ month_bills|default:0|add:0 }}%"
+                            aria-valuenow="{{ month_bills|default:0 }}" aria-valuemin="0" aria-valuemax="50"></div>
+                    </div>
+                    <small class="text-muted">{{ month_bills }} bills this month</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile and Settings -->
+    <div class="col-xl-8 col-lg-7">
+        <!-- Personal Information -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-success">Personal Information</h6>
+            </div>
+            <div class="card-body">
+                <form>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" value="{{ user.first_name }}" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" value="{{ user.last_name }}" readonly>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-control" value="{{ user.email }}" readonly>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" value="{{ user.username }}" readonly>
+                    </div>
+
+                    <button type="button" class="btn btn-outline-secondary" disabled>
+                        ✏️ Edit Profile (Contact Admin)
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Account Settings -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-success">Account Settings</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">🔐 Change Password</h6>
+                            <small>Secure</small>
+                        </div>
+                        <small class="text-muted">Update your login password</small>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">🔔 Notification Settings</h6>
+                            <small>Customize</small>
+                        </div>
+                        <small class="text-muted">Manage email and alert preferences</small>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">🎨 Interface Preferences</h6>
+                            <small>Personalize</small>
+                        </div>
+                        <small class="text-muted">Customize your dashboard appearance</small>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-success">Recent Activity</h6>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for activity in recent_activities %}
+                    <div class="timeline-item mb-3">
+                        <div class="timeline-content">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-success">✅ {{ activity.action }}</span>
+                                <small class="text-muted">{{ activity.time|timesince }} ago</small>
+                            </div>
+                            <small class="text-muted">{{ activity.details }}</small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-3">
+                        <img src="https://img.icons8.com/ios/100/000000/activity.png" width="40">
+                        <p class="text-muted mt-2">No recent activity</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .profile-picture .rounded-circle {
+        background: linear-gradient(135deg, #28a745, #20c997);
+    }
+
+    .timeline-item {
+        border-left: 3px solid #28a745;
+        padding-left: 15px;
+        margin-left: 10px;
+    }
+
+    .card {
+        border: none;
+        border-radius: 15px;
+    }
+
+    .list-group-item {
+        border: none;
+        border-left: 3px solid transparent;
+        transition: all 0.3s;
+    }
+
+    .list-group-item:hover {
+        border-left-color: #28a745;
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock %}

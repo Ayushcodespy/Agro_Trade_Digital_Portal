@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Bills{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Bill History</h2>
+    <a href="{% url 'create_bill' %}" class="btn btn-success">+ Create New Bill</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Bill Number</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Total Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bill in bills %}
+            <tr>
+                <td>{{ bill.bill_number }}</td>
+                <td>{{ bill.customer.name }}</td>
+                <td>{{ bill.date|date:"d M Y" }}</td>
+                <td>₹{{ bill.total_amount }}</td>
+                <td>
+                    <span class="badge {% if bill.payment_status == 'paid' %}bg-success{% elif bill.payment_status == 'partial' %}bg-warning{% else %}bg-danger{% endif %}">
+                        {{ bill.get_payment_status_display }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{% url 'bill_detail' bill.id %}" class="btn btn-sm btn-outline-primary">View</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center">No bills found. <a href="{% url 'create_bill' %}">Create your first bill</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

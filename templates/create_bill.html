@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Bill{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>Create New Bill</h2>
+        <p class="text-muted">Generate bill for customer purchase</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-lg-10 mx-auto">
+        <div class="card bill-card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">🧾 New Bill Creation</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="bill-form">
+                    {% csrf_token %}
+                    
+                    <!-- Customer Search Section -->
+                    <div class="customer-search-section mb-4">
+                        <h6 class="text-success mb-3">🔍 Search Existing Customer</h6>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <input type="text" class="form-control" id="customer-search" 
+                                       placeholder="Type customer name, phone, or address..."
+                                       autocomplete="off">
+                                <div id="customer-results" class="search-results"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="button" class="btn btn-outline-secondary w-100" 
+                                        onclick="clearCustomerSearch()">
+                                    🗑️ Clear Search
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Customer Information -->
+                    <div class="customer-info-section mb-4">
+                        <h6 class="text-success mb-3">👤 Customer Information</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Name *</label>
+                                <input type="text" name="customer_name" id="customer_name" 
+                                       class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone *</label>
+                                <input type="text" name="customer_phone" id="customer_phone" 
+                                       class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Address</label>
+                                <textarea name="customer_address" id="customer_address" 
+                                          class="form-control" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Products Section -->
+                    <div class="products-section mb-4">
+                        <h6 class="text-success mb-3">📦 Products</h6>
+                        <div id="products-container">
+                            <div class="product-row row mb-2 align-items-center">
+                                <div class="col-md-5">
+                                    <select name="products[]" class="form-select product-select" required onchange="updateProductPrice(this)">
+                                        <option value="">Select Product</option>
+                                        {% for product in products %}
+                                        <option value="{{ product.id }}" data-price="{{ product.market_price }}" 
+                                                data-stock="{{ product.current_stock }}">
+                                            {{ product.name }} - ₹{{ product.market_price }} (Stock: {{ product.current_stock }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" name="quantities[]" class="form-control quantity-input" 
+                                           placeholder="Qty" min="1" required oninput="calculateItemTotal(this)">
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="item-price">₹0</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="item-total fw-bold text-success">₹0</span>
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-danger btn-sm remove-product" onclick="removeProduct(this)">×</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button type="button" id="add-product" class="btn btn-secondary btn-sm mt-2" onclick="addProductRow()">
+                            + Add Product
+                        </button>
+                    </div>
+
+                    <!-- Payment Information -->
+                    <div class="payment-section mb-4">
+                        <h6 class="text-success mb-3">💰 Payment Information</h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Total Amount</label>
+                                <input type="text" id="total-amount-display" class="form-control" readonly>
+                                <input type="hidden" id="total-amount" name="total_amount">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Paid Amount *</label>
+                                <input type="number" name="paid_amount" id="paid_amount" class="form-control" 
+                                       step="0.01" min="0" value="0" required oninput="updatePaymentSummary()">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Payment Method</label>
+                                <select name="payment_method" class="form-select" onchange="updatePaymentSummary()">
+                                    <option value="cash">Cash</option>
+                                    <option value="upi">UPI</option>
+                                    <option value="bank">Bank Transfer</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="payment-summary alert alert-info">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Remaining Amount:</strong>
+                                    <span id="remaining-amount" class="fw-bold">₹0</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Payment Status:</strong>
+                                    <span id="payment-status" class="text-warning">Pending</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            👁️ Preview Bill
+                        </button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bill-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+}
+
+.search-results {
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    display: none;
+}
+
+.search-result-item {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.search-result-item:hover {
+    background: #f8f9fa;
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.customer-badge {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 12px;
+}
+
+.product-row {
+    padding: 10px;
+    border-radius: 8px;
+    background: #fafafa;
+    margin-bottom: 10px;
+    transition: background 0.2s;
+}
+
+.product-row:hover {
+    background: #f0f0f0;
+}
+
+.payment-summary {
+    border-radius: 10px;
+    border: none;
+}
+
+.form-actions {
+    padding-top: 20px;
+    border-top: 2px solid #eee;
+}
+</style>
+
+<script>
+// Customer search functionality
+function searchCustomers() {
+    const query = document.getElementById('customer-search').value.trim();
+    const resultsDiv = document.getElementById('customer-results');
+    
+    if (query.length > 1) {
+        fetch(`/search-customers/?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                resultsDiv.innerHTML = '';
+                if (data.length > 0) {
+                    data.forEach(customer => {
+                        const item = document.createElement('div');
+                        item.className = 'search-result-item';
+                        item.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>${customer.name}</strong><br>
+                                    <small class="text-muted">📞 ${customer.phone}</small><br>
+                                    <small class="text-muted">📍 ${customer.address}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge ${customer.outstanding_balance > 0 ? 'bg-warning' : 'bg-success'} customer-badge">
+                                        ₹${customer.outstanding_balance}
+                                    </span><br>
+                                    <small class="text-muted">Last: ${customer.last_purchase}</small>
+                                </div>
+                            </div>
+                        `;
+                        item.addEventListener('click', function() {
+                            document.getElementById('customer_name').value = customer.name;
+                            document.getElementById('customer_phone').value = customer.phone;
+                            document.getElementById('customer_address').value = customer.address;
+                            resultsDiv.style.display = 'none';
+                            document.getElementById('customer-search').value = customer.name;
+                        });
+                        resultsDiv.appendChild(item);
+                    });
+                    resultsDiv.style.display = 'block';
+                } else {
+                    resultsDiv.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error searching customers:', error);
+                resultsDiv.style.display = 'none';
+            });
+    } else {
+        resultsDiv.style.display = 'none';
+    }
+}
+
+// Clear customer search
+function clearCustomerSearch() {
+    document.getElementById('customer-search').value = '';
+    document.getElementById('customer_name').value = '';
+    document.getElementById('customer_phone').value = '';
+    document.getElementById('customer_address').value = '';
+    document.getElementById('customer-results').style.display = 'none';
+}
+
+// Update product price display
+function updateProductPrice(selectElement) {
+    const row = selectElement.closest('.product-row');
+    const price = selectElement.options[selectElement.selectedIndex]?.dataset.price || '0';
+    const quantity = row.querySelector('.quantity-input').value || '0';
+    
+    row.querySelector('.item-price').textContent = `₹${price}`;
+    row.querySelector('.item-total').textContent = `₹${(price * quantity).toFixed(2)}`;
+    calculateTotal();
+}
+
+// Calculate item total
+function calculateItemTotal(inputElement) {
+    const row = inputElement.closest('.product-row');
+    const select = row.querySelector('.product-select');
+    const price = select.options[select.selectedIndex]?.dataset.price || '0';
+    const quantity = inputElement.value || '0';
+    
+    row.querySelector('.item-total').textContent = `₹${(price * quantity).toFixed(2)}`;
+    calculateTotal();
+}
+
+// Calculate total amount
+function calculateTotal() {
+    let total = 0;
+    document.querySelectorAll('.product-row').forEach(row => {
+        const totalText = row.querySelector('.item-total').textContent;
+        const amount = parseFloat(totalText.replace('₹', '')) || 0;
+        total += amount;
+    });
+    
+    document.getElementById('total-amount-display').value = `₹${total.toFixed(2)}`;
+    document.getElementById('total-amount').value = total.toFixed(2);
+    updatePaymentSummary();
+}
+
+// Update payment summary
+function updatePaymentSummary() {
+    const totalAmount = parseFloat(document.getElementById('total-amount').value) || 0;
+    const paidAmount = parseFloat(document.getElementById('paid_amount').value) || 0;
+    const remainingAmount = totalAmount - paidAmount;
+    
+    document.getElementById('remaining-amount').textContent = `₹${remainingAmount.toFixed(2)}`;
+    
+    let paymentStatus = 'Pending';
+    let statusClass = 'text-warning';
+    
+    if (paidAmount === 0) {
+        paymentStatus = 'Pending';
+        statusClass = 'text-danger';
+    } else if (paidAmount >= totalAmount) {
+        paymentStatus = 'Paid';
+        statusClass = 'text-success';
+    } else if (paidAmount > 0) {
+        paymentStatus = 'Partial';
+        statusClass = 'text-warning';
+    }
+    
+    document.getElementById('payment-status').textContent = paymentStatus;
+    document.getElementById('payment-status').className = statusClass;
+}
+
+// Add product row
+function addProductRow() {
+    const container = document.getElementById('products-container');
+    const firstRow = container.querySelector('.product-row');
+    const newRow = firstRow.cloneNode(true);
+    
+    // Clear values
+    newRow.querySelector('.product-select').value = '';
+    newRow.querySelector('.quantity-input').value = '';
+    newRow.querySelector('.item-price').textContent = '₹0';
+    newRow.querySelector('.item-total').textContent = '₹0';
+    
+    // Add event listeners
+    newRow.querySelector('.product-select').addEventListener('change', function() {
+        updateProductPrice(this);
+    });
+    
+    newRow.querySelector('.quantity-input').addEventListener('input', function() {
+        calculateItemTotal(this);
+    });
+    
+    container.appendChild(newRow);
+}
+
+// Remove product row
+function removeProduct(button) {
+    const row = button.closest('.product-row');
+    if (document.querySelectorAll('.product-row').length > 1) {
+        row.remove();
+        calculateTotal();
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Customer search
+    document.getElementById('customer-search').addEventListener('input', searchCustomers);
+    
+    // Hide results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#customer-search') && !e.target.closest('#customer-results')) {
+            document.getElementById('customer-results').style.display = 'none';
+        }
+    });
+    
+    // Add event listeners to initial row
+    const initialSelect = document.querySelector('.product-select');
+    const initialInput = document.querySelector('.quantity-input');
+    
+    if (initialSelect) {
+        initialSelect.addEventListener('change', function() {
+            updateProductPrice(this);
+        });
+    }
+    
+    if (initialInput) {
+        initialInput.addEventListener('input', function() {
+            calculateItemTotal(this);
+        });
+    }
+    
+    // Auto-fill if customer_id is passed
+    const urlParams = new URLSearchParams(window.location.search);
+    const customerId = urlParams.get('customer_id');
+    
+    if (customerId) {
+        fetch(`/search-customers/?q=${customerId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length > 0) {
+                    const customer = data[0];
+                    document.getElementById('customer_name').value = customer.name;
+                    document.getElementById('customer_phone').value = customer.phone;
+                    document.getElementById('customer_address').value = customer.address;
+                }
+            });
+    }
+    
+    // Initial calculation
+    calculateTotal();
+});
+</script>
+{% endblock %}
