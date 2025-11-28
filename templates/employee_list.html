@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>Employee Management</h2>
+            <a href="{% url 'add_employee' %}" class="btn btn-success">
+                <i class="fas fa-user-plus"></i> Add New Employee
+            </a>
+        </div>
+        <p class="text-muted">Manage your shop employees</p>
+    </div>
+</div>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-success">Employees List</h6>
+            </div>
+            <div class="card-body">
+                {% if employees %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Profile</th>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Phone</th>
+                                <th>Salary</th>
+                                <th>Join Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for employee in employees %}
+                            <tr>
+                                <td>
+                                    {% if employee.profile_picture %}
+                                        <img src="{{ employee.profile_picture.url }}" 
+                                             class="rounded-circle" 
+                                             style="width: 40px; height: 40px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-success d-inline-flex align-items-center justify-content-center"
+                                            style="width: 40px; height: 40px; font-size: 1rem; color: white;">
+                                            {{ employee.user.first_name|first|upper }}{{ employee.user.last_name|first|upper }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>{{ employee.user.get_full_name }}</td>
+                                <td>@{{ employee.user.username }}</td>
+                                <td>{{ employee.phone|default:"-" }}</td>
+                                <td>₹{{ employee.salary|default:"0" }}</td>
+                                <td>{{ employee.join_date|date:"d M Y" }}</td>
+                                <td>
+                                    {% if employee.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if employee.is_active %}
+                                        <a href="{% url 'toggle_employee_status' employee.id %}" 
+                                           class="btn btn-warning btn-sm" 
+                                           title="Deactivate">
+                                            <i class="fas fa-user-slash"></i>
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'toggle_employee_status' employee.id %}" 
+                                           class="btn btn-success btn-sm" 
+                                           title="Activate">
+                                            <i class="fas fa-user-check"></i>
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Employees Found</h5>
+                    <p class="text-muted">Add your first employee to get started.</p>
+                    <a href="{% url 'add_employee' %}" class="btn btn-success">Add First Employee</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -679,3 +679,70 @@ def update_all_balances(request):
     
     messages.success(request, f'Updated balances for {updated_count} customers')
     return redirect('dashboard')
+
+
+@login_required
+def employee_list(request):
+    """Only owner can view employees"""
+    if not request.user.userprofile.user_type == 'owner':
+        messages.error(request, 'Only shop owner can access this page.')
+        return redirect('dashboard')
+    
+    employees = UserProfile.objects.filter(created_by=request.user, user_type='employee')
+    return render(request, 'employee_list.html', {'employees': employees})
+
+@login_required
+def add_employee(request):
+    """Only owner can add employees"""
+    if not request.user.userprofile.user_type == 'owner':
+        messages.error(request, 'Only shop owner can add employees.')
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            # Create user
+            user = form.save()
+            user.first_name = request.POST.get('first_name', '')
+            user.last_name = request.POST.get('last_name', '')
+            user.email = request.POST.get('email', '')
+            user.save()
+            
+            # Create employee profile
+            UserProfile.objects.create(
+                user=user,
+                user_type='employee',
+                phone=request.POST.get('phone', ''),
+                address=request.POST.get('address', ''),
+                salary=request.POST.get('salary', ''),
+                created_by=request.user  # Set the owner who created this employee
+            )
+            
+            messages.success(request, f'Employee {user.username} added successfully!')
+            return redirect('employee_list')
+        else:
+            for error in form.errors.values():
+                messages.error(request, error)
+    else:
+        form = UserCreationForm()
+    
+    return render(request, 'add_employee.html', {'form': form})
+
+@login_required
+def toggle_employee_status(request, employee_id):
+    """Activate/Deactivate employee"""
+    if not request.user.userprofile.user_type == 'owner':
+        messages.error(request, 'Only shop owner can manage employees.')
+        return redirect('dashboard')
+    
+    try:
+        employee_profile = UserProfile.objects.get(id=employee_id, created_by=request.user)
+        employee_profile.is_active = not employee_profile.is_active
+        employee_profile.save()
+        
+        status = "activated" if employee_profile.is_active else "deactivated"
+        messages.success(request, f'Employee {employee_profile.user.username} {status} successfully!')
+    except UserProfile.DoesNotExist:
+        messages.error(request, 'Employee not found.')
+    
+    return redirect('employee_list')

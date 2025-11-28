@@ -14,11 +14,13 @@ class UserProfile(models.Model):
     
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     user_type = models.CharField(max_length=20, choices=USER_TYPES)
-    phone = models.CharField(max_length=15)
-    address = models.TextField()
+    phone = models.CharField(max_length=15, blank=True)
+    address = models.TextField(blank=True)
+    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
     salary = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     join_date = models.DateField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_employees')  # NEW
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name} - {self.get_user_type_display()}"

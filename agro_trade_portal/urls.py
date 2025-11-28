@@ -40,4 +40,9 @@ urlpatterns = [
     # Reports
     path('reports/activity/', views.user_activity_report, name='activity_report'),
     path('update-balances/', views.update_all_balances, name='update_balances'),
+
+    # Employee
+    path('employees/', views.employee_list, name='employee_list'),
+    path('employees/add/', views.add_employee, name='add_employee'),
+    path('employees/toggle/<int:employee_id>/', views.toggle_employee_status, name='toggle_employee_status'),
 ]
