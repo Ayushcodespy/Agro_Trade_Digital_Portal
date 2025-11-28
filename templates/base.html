@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agro Trade Portal - {% block title %}Home{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVzV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
 
     <style>
         :root {
@@ -28,6 +30,13 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        body{
+            background-color: honeydew;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         .navbar {
@@ -118,6 +127,44 @@
             color: var(--white);
         }
 
+        /* FOOTER STYLES */
+        .footer {
+            background: var(--primary);
+            color: var(--white);
+            padding: 20px 0;
+            margin-top: auto;
+            text-align: center;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+            margin-bottom: 10px;
+        }
+
+        .footer-links a {
+            color: var(--white);
+            text-decoration: none;
+            transition: 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--underline);
+        }
+
+        .copyright {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
         @media (max-width: 900px) {
             .nav-links {
                 position: absolute;
@@ -138,6 +185,11 @@
 
             .menu-icon {
                 display: block;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 10px;
             }
         }
     </style>
@@ -241,6 +293,36 @@
         {% block content %}
         {% endblock %}
     </div>
+
+    <!-- Footer Section -->
+    <footer class="footer">
+        <div class="footer-content">
+            <ul class="footer-links">
+                <li><a href="#">
+                    <span class="bilingual">
+                        <span class="hindi">गोपनीयता नीति</span>
+                        <span class="english">Privacy Policy</span>
+                    </span>
+                </a></li>
+                <li><a href="#">
+                    <span class="bilingual">
+                        <span class="hindi">सेवा की शर्तें</span>
+                        <span class="english">Terms of Service</span>
+                    </span>
+                </a></li>
+                <li><a href="#">
+                    <span class="bilingual">
+                        <span class="hindi">संपर्क करें</span>
+                        <span class="english">Contact Us</span>
+                    </span>
+                </a></li>
+            </ul>
+            <div class="copyright bilingual">
+                <span class="hindi">© 2024 एग्रो ट्रेड. सभी अधिकार सुरक्षित।</span>
+                <span class="english">© 2024 Agro Trade. All rights reserved.</span>
+            </div>
+        </div>
+    </footer>
 
     <!-- JS: Mobile Toggle + Language Toggle -->
     <script>

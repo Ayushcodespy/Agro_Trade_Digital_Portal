@@ -22,7 +22,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_customers }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-users fa-2x text-gray-300">👥</i>
+                        <i class="fas fa-users fa-beat-fade fa-2x" style="color: #74c0fc;"></i>
                     </div>
                 </div>
             </div>
@@ -39,7 +39,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_bills_today }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-receipt fa-2x text-gray-300">🧾</i>
+                        <i class="fas fa-receipt fa-beat-fade fa-2x" style="color: #1cc88a;"></i>
                     </div>
                 </div>
             </div>
@@ -56,7 +56,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">₹{{ total_outstanding }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-rupee-sign fa-2x text-gray-300">💰</i>
+                        <i class="fa-solid fa-wallet fa-beat-fade fa-2x" style="color: #74c0fc;"></i>
                     </div>
                 </div>
             </div>
@@ -73,7 +73,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_products }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-boxes fa-2x text-gray-300">📦</i>
+                        <i class="fas fa-box fa-beat-fade fa-2x" style="color: #f6c23e;"></i>
                     </div>
                 </div>
             </div>
@@ -85,40 +85,47 @@
 <div class="row">
     <!-- Quick Actions -->
     <div class="col-xl-6 col-lg-6">
-        <div class="card shadow mb-4">
+        <div class="card shadow mb-4" style="min-height: 360px;">
             <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                <h6 class="m-0 font-weight-bold text-success">Quick Actions</h6>
+                <h6 class="m-0 font-weight-bold">Quick Actions</h6>
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <a href="{% url 'create_bill' %}" class="btn btn-success btn-block py-3">
-                            <i class="fas fa-plus mr-2">➕</i><br>
+                    <div class="col-md-6 mb-3 ">
+                        <a href="{% url 'create_bill' %}" class="btn quick_action_btn_1 btn-block py-3">
+                            <i class="fa-solid fa-plus"></i>
+
                             Create Bill
                         </a>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <a href="{% url 'receive_payment' %}" class="btn btn-warning btn-block py-3">
-                            <i class="fas fa-money-bill mr-2">💵</i><br>
+                        <a href="{% url 'receive_payment' %}" class="btn quick_action_btn_2 btn-block py-3">
+                            <i class="fas fa-money-bill mr-2"></i><br>
                             Receive Payment
                         </a>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <a href="{% url 'add_customer' %}" class="btn btn-primary btn-block py-3">
-                            <i class="fas fa-user-plus mr-2">👤</i><br>
+                        <a href="{% url 'add_customer' %}" class="btn quick_action_btn_3 btn-block py-3">
+                            <i class="fas fa-user-plus mr-2"></i><br>
                             Add Customer
                         </a>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <a href="{% url 'add_product' %}" class="btn btn-info btn-block py-3">
-                            <i class="fas fa-box mr-2">📦</i><br>
+                    <div class="col-md-6 mb-3 ">
+                        <a href="{% url 'add_product' %}" class="btn quick_action_btn_4 btn-block py-3">
+                            <i class="fas fa-box mr-2"></i><br> 
                             Add Product
                         </a>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <a href="{% url 'customer_lending' %}" class="btn btn-info btn-block py-3">
-                            <i class="fas fa-chart-line mr-2">📊</i><br>
+                        <a href="{% url 'customer_lending' %}" class="btn quick_action_btn_1 btn-block py-3">
+                            <i class="fas fa-chart-line mr-2"></i><br>
                             Lending Dashboard
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <a href="{% url 'customer_list' %}" class="btn quick_action_btn_2 btn-block py-3">
+                            <i class="fas fa-users mr-2"></i><br>
+                            Customers Details
                         </a>
                     </div>
                 </div>
@@ -126,7 +133,7 @@
         </div>
 
         <!-- Recent Activity -->
-        <div class="card shadow mb-4">
+        <div class="card shadow mb-4" style="min-height: 270px;">
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-success">Recent Activity</h6>
             </div>
@@ -141,27 +148,11 @@
     </div>
 
     <!-- Charts and Statistics -->
+
     <div class="col-xl-6 col-lg-6">
-        <!-- Revenue Summary -->
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-success">Today's Summary</h6>
-            </div>
-            <div class="card-body">
-                <div class="text-center">
-                    <img src="https://img.icons8.com/ios/100/000000/statistics.png" width="50" class="mb-3">
-                    <h4>₹{{ total_outstanding }}</h4>
-                    <p class="text-muted">Total Outstanding Balance</p>
-                    <div class="progress mb-4">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: 65%" aria-valuenow="65"
-                            aria-valuemin="0" aria-valuemax="100"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Quick Reports -->
-        <div class="card shadow mb-4">
+        <div class="card shadow mb-4" style="min-height: 370px;">
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-success">Quick Reports</h6>
             </div>
@@ -195,6 +186,23 @@
                         </div>
                         <small class="text-muted">Detailed activity log</small>
                     </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4" style="min-height: 270px;">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-success">Today's Summary</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <img src="https://img.icons8.com/ios/100/000000/statistics.png" width="50" class="mb-3">
+                    <h4>₹{{ total_outstanding }}</h4>
+                    <p class="text-muted">Total Outstanding Balance</p>
+                    <div class="progress mb-4">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 65%" aria-valuenow="65"
+                            aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -254,6 +262,36 @@
 
     .border-left-warning {
         border-left: 4px solid #f6c23e !important;
+    }
+
+    .btn {
+        font-weight: 600;
+    transition: 0.3s ease;
+    /* background: var(--primary); */
+    color: var(--primary);
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    .btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25); /* deep hover shadow */
+}
+
+    .quick_action_btn_1 {
+        background: #fcdc8c;
+    }
+    .quick_action_btn_2 {
+        background: #77f99e;
+    }
+    .quick_action_btn_3 {
+        background: #51e8ff;
+    }
+    .quick_action_btn_4 {
+        background: #8ba7f9;
     }
 </style>
 {% endblock %}

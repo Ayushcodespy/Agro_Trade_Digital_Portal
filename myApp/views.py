@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login, authenticate, logout
 from django.utils import timezone
 from decimal import Decimal, InvalidOperation 
@@ -65,6 +66,7 @@ def add_product(request):
     
     return render(request, 'add_product.html')
 
+
 # Customer Management
 @login_required
 def customer_list(request):
@@ -98,6 +100,7 @@ def add_customer(request):
     
     return render(request, 'add_customer.html')
 
+
 # Customer Search for AJAX
 @login_required
 def search_customers(request):
@@ -119,6 +122,7 @@ def search_customers(request):
         })
     
     return JsonResponse(results, safe=False)
+
 
 @login_required
 def customer_detail(request, customer_id):
@@ -146,7 +150,6 @@ def customer_detail(request, customer_id):
     }
     
     return render(request, 'customer_detail.html', context)
-
 
 
 
@@ -495,10 +498,38 @@ def login_view(request):
     
     return render(request, 'login.html')
 
+
 def logout_view(request):
     logout(request)
     return redirect('home')
 
+
+# Register View (NEW)
+def register_view(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            
+            # Automatically create UserProfile
+            UserProfile.objects.create(
+                user=user,
+                user_type='employee',  # Default as employee
+                phone='',  # Empty initially
+                address=''  # Empty initially
+            )
+            
+            messages.success(request, 'Registration successful! Please login.')
+            return redirect('login')
+        else:
+            # Show form errors
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{error}")
+    else:
+        form = UserCreationForm()
+    
+    return render(request, 'register.html', {'form': form})
 
 
 
@@ -544,15 +575,16 @@ def customer_lending(request):
         customers = customers.filter(outstanding_balance__gt=5000)
     
     customers_with_stats = []
-    
-    # Use database aggregation for better performance
-    total_outstanding_result = customers.aggregate(
-        total=Sum('outstanding_balance')
-    )['total'] or Decimal('0')
+    total_outstanding = Decimal('0')
+    pending_customers_count = 0  # NEW: Count only customers with outstanding balance
     
     for customer in customers:
         customer_bills = Bill.objects.filter(customer=customer)
         total_purchases = sum(bill.total_amount for bill in customer_bills)
+        
+        #  Count only if outstanding balance > 0
+        if customer.outstanding_balance > 0:
+            pending_customers_count += 1
         
         customers_with_stats.append({
             'customer': customer,
@@ -560,6 +592,8 @@ def customer_lending(request):
             'total_purchases': total_purchases,
             'outstanding_balance': customer.outstanding_balance
         })
+        
+        total_outstanding += customer.outstanding_balance
     
     all_customers = Customer.objects.exclude(Q(address__isnull=True) | Q(address=''))
     unique_villages = list(set(customer.address for customer in all_customers))[:20]
@@ -571,7 +605,8 @@ def customer_lending(request):
         'payment_status': payment_status,
         'unique_villages': unique_villages,
         'total_customers': customers.count(),
-        'total_outstanding': total_outstanding_result,
+        'total_outstanding': total_outstanding,
+        'pending_customers_count': pending_customers_count,  # ✅ NEW
         'filtered': any([search_query, village_filter, payment_status])
     }
     
